@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ShopEngine — Product Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0d1421;
+    --card: #111827;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --green: #00e5a0;
+    --red: #ff4d6d;
+    --yellow: #ffd60a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Glow blobs ── */
+  .blob {
+    position: fixed; border-radius: 50%;
+    filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0;
+  }
+  .blob1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; }
+  .blob2 { width: 500px; height: 500px; background: var(--accent2); bottom: -200px; right: -200px; }
+
+  /* ── Layout ── */
+  .wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,20,0.8);
+    backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px; max-width: 1200px; margin: 0 auto;
+  }
+  .logo {
+    font-family: var(--font-head);
+    font-size: 22px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+  .logo span { font-weight: 400; }
+  .status-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 100px;
+    border: 1px solid var(--border);
+    background: rgba(0,229,160,0.05);
+    font-size: 12px; font-weight: 500; color: var(--green);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── Page intro ── */
+  .page-intro { padding: 48px 0 32px; }
+  .page-intro h1 {
+    font-family: var(--font-head);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800; line-height: 1.05;
+    letter-spacing: -2px;
+  }
+  .page-intro h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .page-intro p { color: var(--muted); margin-top: 12px; font-size: 16px; }
+
+  /* ── Stats bar ── */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 24px;
+    position: relative; overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-label { font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-head); font-size: 32px; font-weight: 800; }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.purple { color: #a78bfa; }
+
+  /* ── Main grid ── */
+  .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+
+  /* ── Section titles ── */
+  .section-title {
+    font-family: var(--font-head);
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── Product list ── */
+  .products-section { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px; }
+
+  .product-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 16px;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: slideIn 0.3s ease forwards;
+    opacity: 0;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .product-item:hover { border-color: rgba(0,212,255,0.3); transform: translateX(4px); }
+
+  .product-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,58,237,0.15));
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .product-info { flex: 1; min-width: 0; }
+  .product-name {
+    font-family: var(--font-head);
+    font-size: 15px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .product-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
+  .product-category {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 100px;
+    background: rgba(124,58,237,0.15); color: #a78bfa;
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+  .product-stock { font-size: 12px; color: var(--muted); }
+
+  .product-pricing { text-align: right; flex-shrink: 0; }
+  .product-price {
+    font-family: var(--font-head); font-size: 18px; font-weight: 800;
+    color: var(--accent);
+  }
+  .product-final {
+    font-size: 12px; color: var(--green);
+    margin-top: 2px;
+  }
+  .product-discount {
+    display: inline-block;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px; border-radius: 4px;
+    background: rgba(255,214,10,0.15); color: var(--yellow);
+    border: 1px solid rgba(255,214,10,0.3);
+    margin-top: 3px;
+  }
+
+  .product-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; transition: all 0.2s; color: var(--muted);
+  }
+  .btn-icon:hover { border-color: var(--red); color: var(--red); background: rgba(255,77,109,0.08); }
+  .btn-icon.discount:hover { border-color: var(--yellow); color: var(--yellow); background: rgba(255,214,10,0.08); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── Right panel ── */
+  .right-panel { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── Form card ── */
+  .form-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+
+  input, select, textarea {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: var(--font-body); font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+  }
+  input::placeholder { color: var(--muted); }
+  select option { background: var(--card); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; padding: 13px;
+    border-radius: 10px; border: none;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #0099cc);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(0,212,255,0.25);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,212,255,0.35); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: rgba(124,58,237,0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(124,58,237,0.3);
+    margin-top: 10px;
+  }
+  .btn-secondary:hover { background: rgba(124,58,237,0.25); }
+
+  /* ── Discount panel ── */
+  .discount-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 24px;
+  }
+  .discount-tiers { margin: 16px 0; }
+  .tier {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 10px;
+    margin-bottom: 8px; font-size: 13px;
+    border: 1px solid transparent;
+  }
+  .tier.t3 { background: rgba(255,214,10,0.05); border-color: rgba(255,214,10,0.2); }
+  .tier.t2 { background: rgba(0,229,160,0.05); border-color: rgba(0,229,160,0.2); }
+  .tier.t1 { background: rgba(0,212,255,0.05); border-color: rgba(0,212,255,0.2); }
+  .tier-badge { font-family: var(--font-head); font-weight: 800; font-size: 16px; }
+  .tier.t3 .tier-badge { color: var(--yellow); }
+  .tier.t2 .tier-badge { color: var(--green); }
+  .tier.t1 .tier-badge { color: var(--accent); }
+  .tier-desc { color: var(--muted); font-size: 11px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    padding: 14px 20px; border-radius: 12px;
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    z-index: 9999; transform: translateY(80px); opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 360px; backdrop-filter: blur(20px);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: rgba(0,229,160,0.15); border: 1px solid rgba(0,229,160,0.4); color: var(--green); }
+  .toast.error   { background: rgba(255,77,109,0.15); border: 1px solid rgba(255,77,109,0.4); color: var(--red); }
+
+  /* ── Modal ── */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(8,12,20,0.85);
+    backdrop-filter: blur(10px); z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-bg.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; width: 100%; max-width: 440px;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-bg.open .modal { transform: scale(1); }
+  .modal h3 { font-family: var(--font-head); font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+  .btn-cancel {
+    flex: 1; padding: 12px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--muted); }
+  .btn-apply {
+    flex: 1; padding: 12px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--yellow), #ffa500);
+    border: none; color: #000;
+    font-family: var(--font-head); font-size: 14px; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-apply:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,214,10,0.3); }
+
+  /* ── Loading spinner ── */
+  .spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(0,212,255,0.2);
+    border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-state { display: flex; justify-content: center; padding: 40px; }
+
+  /* ── API config bar ── */
+  .api-config {
+    background: rgba(255,214,10,0.05);
+    border: 1px solid rgba(255,214,10,0.2);
+    border-radius: 14px; padding: 16px 20px;
+    margin-bottom: 32px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .api-config span { font-size: 12px; color: var(--yellow); font-weight: 600; white-space: nowrap; }
+  .api-config input {
+    flex: 1; min-width: 200px;
+    background: rgba(0,0,0,0.3); border-color: rgba(255,214,10,0.3);
+    font-size: 12px; padding: 8px 12px;
+  }
+  .api-config input:focus { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(255,214,10,0.08); }
+  .btn-save-url {
+    padding: 8px 16px; border-radius: 8px;
+    background: rgba(255,214,10,0.15); border: 1px solid rgba(255,214,10,0.3);
+    color: var(--yellow); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s; white-space: nowrap;
+    font-family: var(--font-body);
+  }
+  .btn-save-url:hover { background: rgba(255,214,10,0.25); }
+
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .right-panel { order: -1; }
+  }
+  @media (max-width: 500px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<!-- Header -->
+<header>
+  <div class="header-inner">
+    <div class="logo">Shop<span>Engine</span></div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      API Connected
+    </div>
+  </div>
+</header>
+
+<!-- Main content -->
+<div class="wrapper">
+  <div class="page-intro">
+    <h1>Product <em>Dashboard</em></h1>
+    <p>Manage your e-commerce product catalogue in real time</p>
+  </div>
+
+  <!-- API URL Config -->
+  <div class="api-config">
+    <span>⚡ BACKEND URL</span>
+    <input type="text" id="apiUrl" placeholder="https://your-codespace-8080.app.github.dev"/>
+    <button class="btn-save-url" onclick="saveApiUrl()">Save & Reload</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Products</div>
+      <div class="stat-value accent" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Stock</div>
+      <div class="stat-value green" id="statStock">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg. Price</div>
+      <div class="stat-value yellow" id="statAvg">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Discounted</div>
+      <div class="stat-value purple" id="statDisc">—</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- Products list -->
+    <div class="products-section">
+      <div class="section-title">Live Products</div>
+      <div id="productList">
+        <div class="loading-state"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="right-panel">
+
+      <!-- Add product form -->
+      <div class="form-card">
+        <div class="section-title">Add Product</div>
+        <div class="form-group">
+          <label>Product Name</label>
+          <input type="text" id="fName" placeholder="e.g. iPhone 15 Pro"/>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="fDesc" placeholder="Short description"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price ($)</label>
+            <input type="number" id="fPrice" placeholder="99.99" step="0.01" min="0.01"/>
+          </div>
+          <div class="form-group">
+            <label>Stock Qty</label>
+            <input type="number" id="fStock" placeholder="100" min="0"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="fCategory">
+            <option value="">Select category</option>
+            <option>Electronics</option>
+            <option>Clothing</option>
+            <option>Books</option>
+            <option>Home & Garden</option>
+            <option>Sports</option>
+            <option>Toys</option>
+            <option>Food & Beverage</option>
+            <option>Beauty</option>
+            <option>Automotive</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addProduct()" id="btnAdd">
+          + Add Product
+        </button>
+      </div>
+
+      <!-- Discount tiers info -->
+      <div class="discount-card">
+        <div class="section-title">Discount Tiers</div>
+        <div class="discount-tiers">
+          <div class="tier t3">
+            <div>
+              <div style="font-weight:600">High Intent</div>
+              <div class="tier-desc">10+ views OR 3+ cart adds</div>
+            </div>
+            <div class="tier-badge">15%</div>
+          </div>
+          <div class="tier t2">
+            <div>
+              <div style="font-weight:600">Loyal Customer</div>
+              <div class="tier-desc">3+ previous purchases</div>
+            </div>
+            <div class="tier-badge">10%</div>
+          </div>
+          <div class="tier t1">
+            <div>
+              <div style="font-weight:600">Return Buyer</div>
+              <div class="tier-desc">1–2 previous purchases</div>
+            </div>
+            <div class="tier-badge">5%</div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);text-align:center">Click 🏷️ on any product to apply</p>
+      </div>
+
+    </div>
+  </div>
+  <div style="height:60px"></div>
+</div>
+
+<!-- Discount Modal -->
+<div class="modal-bg" id="discountModal">
+  <div class="modal">
+    <h3>🏷️ Apply Discount</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Enter customer shopping behaviour to calculate discount</p>
+    <input type="hidden" id="discProductId"/>
+    <div class="form-group">
+      <label>Purchase Count</label>
+      <input type="number" id="dPurchase" placeholder="0" min="0"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>View Count</label>
+        <input type="number" id="dViews" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Cart Adds</label>
+        <input type="number" id="dCart" placeholder="0" min="0"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-apply" onclick="applyDiscount()">Apply Discount</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Config ────────────────────────────────────────────────────
+  let API_BASE = localStorage.getItem('apiBase') || '';
+
+  // Pre-fill saved URL
+  document.getElementById('apiUrl').value = API_BASE;
+
+  function saveApiUrl() {
+    const val = document.getElementById('apiUrl').value.trim().replace(/\/+$/, '');
+    localStorage.setItem('apiBase', val);
+    API_BASE = val;
+    loadProducts();
+    showToast('✅ API URL saved!', 'success');
+  }
+
+  // ── Category emoji map ────────────────────────────────────────
+  const catEmoji = {
+    'Electronics': '💻', 'Clothing': '👗', 'Books': '📚',
+    'Home & Garden': '🏡', 'Sports': '⚽', 'Toys': '🧸',
+    'Food & Beverage': '🍕', 'Beauty': '💄', 'Automotive': '🚗',
+  };
+  function getEmoji(cat) { return catEmoji[cat] || '📦'; }
+
+  // ── Load products ─────────────────────────────────────────────
+  async function loadProducts() {
+    if (!API_BASE) {
+      document.getElementById('productList').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚡</div>
+          <p>Enter your Codespaces backend URL above and click <strong>Save & Reload</strong></p>
+        </div>`;
+      return;
+    }
+    document.getElementById('productList').innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/products`);
+      const products = await res.json();
+      renderProducts(products);
+      updateStats(products);
+    } catch (e) {
+      document.getElementById('productList').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">❌</div>
+          <p>Cannot reach backend. Make sure your app is running and port is <strong>Public</strong>.</p>
+        </div>`;
+    }
+  }
+
+  function renderProducts(products) {
+    const el = document.getElementById('productList');
+    if (!products.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No products yet. Add your first one!</p></div>`;
+      return;
+    }
+    el.innerHTML = products.map((p, i) => `
+      <div class="product-item" style="animation-delay:${i * 60}ms">
+        <div class="product-icon">${getEmoji(p.category)}</div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-meta">
+            <span class="product-category">${p.category}</span>
+            <span class="product-stock">📦 ${p.stockQuantity} in stock</span>
+          </div>
+        </div>
+        <div class="product-pricing">
+          <div class="product-price">$${Number(p.price).toFixed(2)}</div>
+          ${p.discountPercentage ? `
+            <div class="product-final">$${Number(p.finalPrice).toFixed(2)} final</div>
+            <div class="product-discount">-${p.discountPercentage}% OFF</div>
+          ` : ''}
+        </div>
+        <div class="product-actions">
+          <button class="btn-icon discount" title="Apply Discount" onclick="openModal(${p.id})">🏷️</button>
+          <button class="btn-icon" title="Delete" onclick="deleteProduct(${p.id})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateStats(products) {
+    document.getElementById('statTotal').textContent = products.length;
+    document.getElementById('statStock').textContent = products.reduce((s, p) => s + p.stockQuantity, 0);
+    const avg = products.length ? products.reduce((s, p) => s + p.price, 0) / products.length : 0;
+    document.getElementById('statAvg').textContent = avg ? '$' + avg.toFixed(0) : '—';
+    document.getElementById('statDisc').textContent = products.filter(p => p.discountPercentage).length;
+  }
+
+  // ── Add product ───────────────────────────────────────────────
+  async function addProduct() {
+    const name = document.getElementById('fName').value.trim();
+    const desc = document.getElementById('fDesc').value.trim();
+    const price = parseFloat(document.getElementById('fPrice').value);
+    const stock = parseInt(document.getElementById('fStock').value);
+    const category = document.getElementById('fCategory').value;
+
+    if (!name || !price || !stock || !category) { showToast('⚠️ Fill in all fields', 'error'); return; }
+    if (!API_BASE) { showToast('⚠️ Set your API URL first', 'error'); return; }
+
+    const btn = document.getElementById('btnAdd');
+    btn.disabled = true; btn.textContent = 'Adding...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description: desc, price, stockQuantity: stock, category })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        const msgs = err.validationErrors ? Object.values(err.validationErrors).join(', ') : err.message;
+        showToast('❌ ' + msgs, 'error');
+      } else {
+        showToast('✅ Product added!', 'success');
+        document.getElementById('fName').value = '';
+        document.getElementById('fDesc').value = '';
+        document.getElementById('fPrice').value = '';
+        document.getElementById('fStock').value = '';
+        document.getElementById('fCategory').value = '';
+        loadProducts();
+      }
+    } catch(e) { showToast('❌ Network error', 'error'); }
+    finally { btn.disabled = false; btn.textContent = '+ Add Product'; }
+  }
+
+  // ── Delete product ────────────────────────────────────────────
+  async function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    try {
+      await fetch(`${API_BASE}/api/v1/products/${id}`, { method: 'DELETE' });
+      showToast('🗑️ Product deleted', 'success');
+      loadProducts();
+    } catch(e) { showToast('❌ Delete failed', 'error'); }
+  }
+
+  // ── Discount modal ────────────────────────────────────────────
+  function openModal(id) {
+    document.getElementById('discProductId').value = id;
+    document.getElementById('dPurchase').value = '';
+    document.getElementById('dViews').value = '';
+    document.getElementById('dCart').value = '';
+    document.getElementById('discountModal').classList.add('open');
+  }
+  function closeModal() { document.getElementById('discountModal').classList.remove('open'); }
+
+  async function applyDiscount() {
+    const id = document.getElementById('discProductId').value;
+    const purchaseCount = parseInt(document.getElementById('dPurchase').value) || 0;
+    const viewCount = parseInt(document.getElementById('dViews').value) || 0;
+    const cartAddCount = parseInt(document.getElementById('dCart').value) || 0;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/products/${id}/discount`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseCount, viewCount, cartAddCount })
+      });
+      const data = await res.json();
+      showToast(`🎉 ${data.discountPercentage}% discount applied!`, 'success');
+      closeModal(); loadProducts();
+    } catch(e) { showToast('❌ Failed to apply discount', 'error'); }
+  }
+
+  // Close modal on background click
+  document.getElementById('discountModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ── Toast ─────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `toast ${type} show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  loadProducts();
+</script>
+</body>
+</html>
